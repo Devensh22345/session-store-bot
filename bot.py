@@ -13,6 +13,7 @@ BOT = Client(
     bot_token=BOT_TOKEN
 )
 
+# Temporary storage per user during login flow
 TEMP = {}
 
 def panel():
@@ -53,10 +54,10 @@ async def cb(_, q):
         await q.message.reply("✅ Validity updated")
 
     elif q.data == "get":
-        await q.message.reply("Send phone number")
+        await q.message.reply("Send phone number to retrieve session")
 
     elif q.data == "remove":
-        await q.message.reply("Send phone number to delete")
+        await q.message.reply("Send phone number to delete session")
 
     elif q.data == "clear":
         delete_all()
@@ -67,22 +68,24 @@ async def steps(_, m):
     uid = m.from_user.id
     text = m.text.strip()
 
-    # ----- GET / DELETE -----
+    # ----- GET / DELETE SESSIONS -----
     if uid not in TEMP:
         s = get_one(text)
-        if not s:
+        if s:
+            # Send session string & session file
+            await m.reply(f"🔑 **Session String:**\n`{s['session_string']}`")
+            file = decode_file(s["session_file"])
+            fname = f"{text}.session"
+            with open(fname, "wb") as f:
+                f.write(file)
+            await m.reply_document(fname)
+            os.remove(fname)
+        else:
             delete_one(text)
-            return await m.reply("❌ Session deleted")
-
-        await m.reply(f"🔑 **Session String:**\n`{s['session_string']}`")
-        file = decode_file(s["session_file"])
-        fname = f"{text}.session"
-        with open(fname, "wb") as f:
-            f.write(file)
-        await m.reply_document(fname)
-        os.remove(fname)
+            await m.reply("❌ Session deleted")
         return
 
+    # ----- ADD SESSION FLOW -----
     d = TEMP[uid]
 
     if "api_id" not in d:
@@ -102,22 +105,27 @@ async def steps(_, m):
             in_memory=True
         )
         await d["client"].connect()
-        await d["client"].send_code(text)
-        return await m.reply("Send **OTP**")
+
+        # ✅ Send login code and save phone_code_hash
+        sent = await d["client"].send_code(d["phone"])
+        d["phone_code_hash"] = sent.phone_code_hash
+        return await m.reply("Send **OTP** you received on Telegram")
 
     if "otp" not in d:
         try:
+            # ✅ Sign in using OTP and phone_code_hash
             await d["client"].sign_in(
                 phone_number=d["phone"],
-                phone_code=text
+                phone_code=text,
+                phone_code_hash=d["phone_code_hash"]
             )
         except SessionPasswordNeeded:
             d["otp"] = text
             return await m.reply("🔐 **2FA Enabled**\nSend your **Telegram password**")
-
         return await finalize_session(uid, m)
 
     if "password" not in d:
+        # ✅ Handle 2FA password
         await d["client"].check_password(text)
         return await finalize_session(uid, m)
 
