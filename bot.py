@@ -1,4 +1,5 @@
 import os
+import base64
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram.errors import SessionPasswordNeeded
@@ -6,6 +7,17 @@ from db import *
 from session_utils import *
 from config import BOT_TOKEN, OWNER_ID
 
+# ------------------- Encode / Decode Helpers -------------------
+def encode_file(file_path: str) -> str:
+    """Encode a local file to base64 string for storage."""
+    with open(file_path, "rb") as f:
+        return base64.b64encode(f.read()).decode()
+
+def decode_file(data: str) -> bytes:
+    """Decode base64 string back to bytes for file download."""
+    return base64.b64decode(data)
+
+# ------------------- Bot Initialization -------------------
 BOT = Client(
     "session_manager_bot",
     api_id="22207976",
@@ -13,9 +25,9 @@ BOT = Client(
     bot_token=BOT_TOKEN
 )
 
-# Temporary storage per user during login flow
-TEMP = {}
+TEMP = {}  # Temporary per-user storage during login flow
 
+# ------------------- Inline Panel -------------------
 def panel():
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("➕ Add Session", callback_data="add")],
@@ -26,10 +38,12 @@ def panel():
         [InlineKeyboardButton("🧹 Remove All", callback_data="clear")]
     ])
 
+# ------------------- /start Command -------------------
 @BOT.on_message(filters.command("start") & filters.user(OWNER_ID))
 async def start(_, m):
     await m.reply("🔐 **Pyrogram Session Manager**", reply_markup=panel())
 
+# ------------------- Callback Queries -------------------
 @BOT.on_callback_query(filters.user(OWNER_ID))
 async def cb(_, q):
     uid = q.from_user.id
@@ -63,6 +77,7 @@ async def cb(_, q):
         delete_all()
         await q.message.reply("🧹 All sessions removed")
 
+# ------------------- Text Messages (Add / Get / Delete Sessions) -------------------
 @BOT.on_message(filters.user(OWNER_ID) & filters.text)
 async def steps(_, m):
     uid = m.from_user.id
@@ -129,6 +144,7 @@ async def steps(_, m):
         await d["client"].check_password(text)
         return await finalize_session(uid, m)
 
+# ------------------- Finalize & Save Session -------------------
 async def finalize_session(uid, m):
     d = TEMP[uid]
     client = d["client"]
@@ -151,4 +167,5 @@ async def finalize_session(uid, m):
     TEMP.pop(uid)
     await m.reply(f"✅ **Session Added:** {me.first_name}")
 
+# ------------------- Run Bot -------------------
 BOT.run()
