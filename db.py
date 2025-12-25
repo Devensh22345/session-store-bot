@@ -1,6 +1,8 @@
 from pymongo import MongoClient
 import os
 from datetime import datetime
+from config import MONGO_URI, DB_NAME
+
 
 mongo = MongoClient(os.getenv("MONGO_URI"))
 db = mongo["SESSION_MANAGER"]
