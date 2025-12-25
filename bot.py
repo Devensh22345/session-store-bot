@@ -8,8 +8,8 @@ from config import BOT_TOKEN, OWNER_ID
 
 BOT = Client(
     "session_manager_bot",
-    api_id=1,
-    api_hash="1",
+    api_id="22207976",
+    api_hash="5c0ad7c48a86afac87630ba28b42560d",
     bot_token=BOT_TOKEN
 )
 
