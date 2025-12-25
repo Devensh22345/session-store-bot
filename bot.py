@@ -1,13 +1,10 @@
 import os, base64
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from dotenv import load_dotenv
 from db import *
 from session_utils import *
 from config import BOT_TOKEN, OWNER_ID, MONGO_URI
 
-
-load_dotenv()
 
 
 BOT = Client(
