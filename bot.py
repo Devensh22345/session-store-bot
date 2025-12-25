@@ -4,6 +4,7 @@ from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from db import *
 from session_utils import *
 from config import BOT_TOKEN, OWNER_ID, MONGO_URI
+from pyrogram.errors import SessionPasswordNeeded
 
 
 
