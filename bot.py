@@ -9,12 +9,6 @@ from config import BOT_TOKEN, OWNER_ID, MONGO_URI
 
 load_dotenv()
 
-app = Client(
-    "session_manager_bot",
-    api_id=1,
-    api_hash="1",
-    bot_token=BOT_TOKEN
-)
 
 BOT = Client(
     "session_manager_bot",
